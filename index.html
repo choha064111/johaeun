@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>타자 연습 게임</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+      padding: 40px;
+      overflow: hidden;
+    }
+    #word {
+      font-size: 2rem;
+      color: #2c3e50;
+      margin: 20px 0;
+      height: 50px;
+      transition: transform 0.1s, filter 0.3s;
+    }
+    @keyframes shake {
+      0% { transform: translateX(-5px); }
+      25% { transform: translateX(5px); }
+      50% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+      100% { transform: translateX(0); }
+    }
+    .shake {
+      animation: shake 0.4s ease;
+    }
+    .fake-cursor {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      background-color: black;
+      border-radius: 50%;
+      z-index: 9999;
+      top: 50%;
+      left: -30px;
+      transition: left 1.7s linear;
+    }
+    #playCount, #round, #inputBox, #result, #summary, #restartBtn {
+      margin-top: 10px;
+      font-size: 1rem;
+    }
+    #inputBox {
+      padding: 10px;
+      font-size: 1.2rem;
+      width: 300px;
+    }
+    #restartBtn {
+      padding: 10px 20px;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🥇 낱말 타자 연습 게임</h1>
+  <div id="playCount">시도 횟수: 0</div>
+  <div id="round">1 / 10 문제</div>
+  <div id="word">게임을 시작합니다...</div>
+  <input type="text" id="inputBox" placeholder="단어를 입력하세요" autocomplete="off" disabled />
+  <div id="result"></div>
+  <div id="summary"></div>
+  <button id="restartBtn">🔁 다시 시작하기</button>
+
+  <script>
+    const wordList = [
+      "사과", "바나나", "포도", "딸기", "수박", "참외", "복숭아", "자두", "오렌지", "키위",
+      "호랑이", "사자", "코끼리", "기린", "토끼", "강아지", "고양이", "여우", "늑대", "펭귄",
+      "코딩", "자바스크립트", "함수", "컴퓨터", "프로그래밍"
+    ];
+
+    const wordEl = document.getElementById('word');
+    const inputBox = document.getElementById('inputBox');
+    const result = document.getElementById('result');
+    const summary = document.getElementById('summary');
+    const roundDisplay = document.getElementById('round');
+    const playCountDisplay = document.getElementById('playCount');
+    const restartBtn = document.getElementById('restartBtn');
+
+    let currentWord = '';
+    let startTime;
+    let totalRounds = 10;
+    let currentRound = 0;
+    let totalTime = 0;
+    let correctCount = 0;
+    let wrongCount = 0;
+    let playCount = 0;
+    let shuffledWords = [];
+
+    // 방해공작 효과 리스트
+    const distractionEffects = [shakeWordEffect, fakeCursorEffect, blurWordEffect];
+    let effectQueue = shuffle([...distractionEffects]);
+
+    function shuffle(arr) {
+      return arr.sort(() => Math.random() - 0.5);
+    }
+
+    function triggerDistractionEffect() {
+      if (effectQueue.length === 0) {
+        effectQueue = shuffle([...distractionEffects]);
+      }
+      const effect = effectQueue.shift();
+      effectQueue.push(effect);
+      effect();
+    }
+
+    function shakeWordEffect() {
+      wordEl.classList.add('shake');
+      setTimeout(() => wordEl.classList.remove('shake'), 400);
+    }
+
+    function fakeCursorEffect() {
+      const cursor = document.createElement('div');
+      cursor.classList.add('fake-cursor');
+      document.body.appendChild(cursor);
+      setTimeout(() => {
+        cursor.style.left = '110%';
+      }, 50);
+      setTimeout(() => cursor.remove(), 1800);
+    }
+
+    function blurWordEffect() {
+      wordEl.style.filter = "blur(3px)";
+      setTimeout(() => {
+        wordEl.style.filter = "none";
+      }, 1000);
+    }
+
+    function showNewWord() {
+      if (currentRound >= totalRounds) {
+        showSummary();
+        return;
+      }
+
+      if (Math.random() < 0.3) {
+        setTimeout(triggerDistractionEffect, 700);
+      }
+
+      currentWord = shuffledWords[currentRound];
+      roundDisplay.textContent = `${currentRound + 1} / ${totalRounds} 문제`;
+      wordEl.textContent = currentWord;
+      inputBox.value = '';
+      inputBox.disabled = false;
+      inputBox.focus();
+      startTime = new Date();
+    }
+
+    function nextRound(isCorrect) {
+      inputBox.disabled = true;
+      const endTime = new Date();
+      const timeTaken = (endTime - startTime) / 1000;
+
+      if (isCorrect) {
+        correctCount++;
+        totalTime += timeTaken;
+        result.textContent = `✅ 정답! (${timeTaken.toFixed(2)}초)`;
+      } else {
+        wrongCount++;
+        result.textContent = `❌ 오답! 정답은 "${currentWord}"`;
+      }
+
+      currentRound++;
+      setTimeout(() => {
+        if (currentRound < totalRounds) {
+          wordEl.textContent = '⏳ 다음 단어 준비 중...';
+        }
+      }, 300);
+
+      setTimeout(() => {
+        showNewWord();
+      }, 1500);
+    }
+
+    function showSummary() {
+      wordEl.textContent = "🎉 게임 종료!";
+      inputBox.style.display = "none";
+      roundDisplay.style.display = "none";
+      restartBtn.style.display = "inline-block";
+
+      const avgTime = correctCount ? (totalTime / correctCount).toFixed(2) : 0;
+      summary.innerHTML = `
+        <hr>
+        <h3>📊 결과 요약</h3>
+        <p>총 게임 횟수: ${playCount}회</p>
+        <p>맞은 개수: ${correctCount}개</p>
+        <p>틀린 개수: ${wrongCount}개</p>
+        <p>평균 속도: ${avgTime}초</p>
+      `;
+    }
+
+    function resetGame() {
+      shuffledWords = shuffle([...wordList]).slice(0, totalRounds);
+      currentRound = 0;
+      totalTime = 0;
+      correctCount = 0;
+      wrongCount = 0;
+
+      wordEl.textContent = '게임을 시작합니다...';
+      inputBox.value = '';
+      inputBox.style.display = 'inline-block';
+      inputBox.disabled = true;
+      result.textContent = '';
+      summary.innerHTML = '';
+      roundDisplay.style.display = 'block';
+      restartBtn.style.display = 'none';
+
+      playCount++;
+      playCountDisplay.textContent = `시도 횟수: ${playCount}`;
+
+      setTimeout(() => {
+        showNewWord();
+      }, 1500);
+    }
+
+    inputBox.addEventListener('input', () => {
+      const input = inputBox.value.trim();
+      if (input === currentWord) {
+        nextRound(true);
+      }
+    });
+
+    inputBox.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const input = inputBox.value.trim();
+        if (input === currentWord) {
+          nextRound(true);
+        } else {
+          nextRound(false);
+        }
+      }
+    });
+
+    restartBtn.addEventListener('click', resetGame);
+    window.onload = resetGame;
+  </script>
+</body>
+</html>
