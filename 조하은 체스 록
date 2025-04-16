@@ -1,0 +1,44 @@
+field = [[0,0,0,0,0,0,0,0],
+         [0,0,0,0,0,0,0,0],
+         [0,0,0,0,0,0,0,0],
+         [0,0,0,0,0,0,0,0],
+         [0,0,0,0,0,0,0,0],
+         [0,0,0,1,0,0,0,0],
+         [0,0,0,0,0,0,0,0],
+         [0,0,0,0,0,0,0,0]]
+for x in range(len(field)):
+    for y in range(len(field)):
+
+print(field[5][3])
+
+def get_rook_moves(field, start):
+    moves=[]
+    row, col=start
+
+    for r in range(row-1,-1,-1):
+        if field[r][col]==0:
+           moves.append((r,col))
+        else:
+            break
+
+    for r in range(row+1,8):
+        if field[r][col]==0:
+            moves.append((r,col))
+        else:
+            break
+
+    for c in range(col-1,-1,-1):
+        if field[row][c]==0:
+            moves.append((row,c))
+        else:
+            break
+
+    for c in range(col+1,+8):
+        if field[row][c]==0:
+            moves.append((row,c))
+    return moves
+
+field=[[0 for _ in range(8)] for _ in range(8)]
+start= [5, 3]
+result=get_rook_moves(field,start)
+print("이동 가능한 위치:", result)
